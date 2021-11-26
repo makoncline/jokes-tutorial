@@ -1,6 +1,7 @@
 import { ActionFunction, redirect } from "@remix-run/server-runtime";
 import { useActionData } from "remix";
 import { db } from "~/utils/db.server";
+import { requireUserId } from "~/utils/session.server";
 
 function validateJokeName(name: string): string | undefined {
   if (!name) return "Name is required";
@@ -25,6 +26,7 @@ type ActionData = {
 export const action: ActionFunction = async ({
   request,
 }): Promise<Response | ActionData> => {
+  const userId = await requireUserId(request);
   const form = await request.formData();
   let name = form.get("name");
   let content = form.get("content");
@@ -43,7 +45,7 @@ export const action: ActionFunction = async ({
   }
 
   const joke = await db.joke.create({
-    data: { name, content },
+    data: { name, content, jokesterId: userId },
   });
   return redirect(`/jokes/${joke.id}`);
 };
@@ -104,6 +106,14 @@ export default function NewJokeRoute() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+export function ErrorBoundary() {
+  return (
+    <div className="error-container">
+      Something unexpected went wrong. Sorry about that.
     </div>
   );
 }
